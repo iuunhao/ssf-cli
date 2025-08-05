@@ -30,11 +30,11 @@ class ScriptManager:
     
     def _load_scripts(self):
         """加载所有脚本"""
-        scripts_dir = Path(__file__).parent
+        scripts_dir = Path(__file__).parent.parent / "scripts"
         
         # 遍历scripts目录
         for script_file in scripts_dir.glob("*.py"):
-            if script_file.name in ["__init__.py", "base.py", "manager.py"]:
+            if script_file.name in ["__init__.py"]:
                 continue
             
             try:

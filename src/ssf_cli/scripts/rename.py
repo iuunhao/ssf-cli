@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .base import BaseScript
+from ..core.base import BaseScript
 from ..config import SSFConfig
 
 

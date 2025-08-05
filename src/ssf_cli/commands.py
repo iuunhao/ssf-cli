@@ -482,7 +482,7 @@ def process(
     display_banner()
     
     # 导入脚本管理器
-    from .scripts.manager import ScriptManager
+    from .core.manager import ScriptManager
     
     # 创建脚本管理器
     script_manager = ScriptManager(config_manager.load_config(), get_current_working_directory())
@@ -577,7 +577,7 @@ def scripts():
     """显示可用脚本"""
     display_banner()
     
-    from .scripts.manager import ScriptManager
+    from .core.manager import ScriptManager
     
     script_manager = ScriptManager(config_manager.load_config(), get_current_working_directory())
     scripts_info = script_manager.list_scripts()
