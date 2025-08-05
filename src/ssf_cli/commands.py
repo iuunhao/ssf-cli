@@ -72,7 +72,7 @@ def info():
     # 获取安装信息
     install_info = get_installation_info()
     
-    table = Table(title="系统信息 - 开发模式全局可用测试")
+    table = Table(title="系统信息 - 开发模式全局可用测试1")
     table.add_column("项目", style="cyan")
     table.add_column("值", style="green")
     
