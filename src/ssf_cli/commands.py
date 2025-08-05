@@ -331,6 +331,10 @@ def help():
     ssf files count     - 统计文件
     ssf files size      - 目录大小
     
+    文件处理:
+    ssf process rename  - 文件重命名工具
+    ssf scripts         - 显示可用脚本
+    
     系统工具:
     ssf system          - 系统信息工具
     
@@ -349,6 +353,9 @@ def help():
     ssf fetch https://httpbin.org/json
     ssf files list --path /tmp
     ssf system
+    ssf process rename --prefix "new_" --pattern "*.txt"
+    ssf process rename --replace "old=new" --dry-run
+    ssf scripts
     """
     
     display_info("SSF CLI 帮助", help_text)
@@ -454,6 +461,145 @@ def files(
         get_directory_size(target_path)
     else:
         display_error(f"未知的操作类型: {action}")
+
+
+@app.command()
+def process(
+    script: str = typer.Argument(..., help="脚本名称"),
+    action: str = typer.Option("execute", "--action", "-a", help="操作类型: execute, preview, info"),
+    pattern: str = typer.Option("*", "--pattern", "-p", help="文件模式"),
+    prefix: str = typer.Option(None, "--prefix", help="文件名前缀"),
+    suffix: str = typer.Option(None, "--suffix", help="文件名后缀"),
+    replace: str = typer.Option(None, "--replace", help="替换规则 (格式: old=new)"),
+    format: str = typer.Option(None, "--format", help="格式化规则"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="仅预览，不执行"),
+    backup: bool = typer.Option(True, "--backup/--no-backup", help="是否备份"),
+    recursive: bool = typer.Option(True, "--recursive", help="是否递归"),
+    exclude: str = typer.Option(None, "--exclude", help="排除模式 (逗号分隔)"),
+):
+    """文件处理工具"""
+    display_banner()
+    
+    # 导入脚本管理器
+    from .scripts.manager import ScriptManager
+    
+    # 创建脚本管理器
+    script_manager = ScriptManager(config_manager.load_config(), get_current_working_directory())
+    
+    if action == "info":
+        # 显示脚本信息
+        if script == "list":
+            scripts_info = script_manager.list_scripts()
+            
+            table = Table(title="可用脚本")
+            table.add_column("脚本名称", style="cyan")
+            table.add_column("描述", style="green")
+            table.add_column("支持扩展", style="yellow")
+            
+            for info in scripts_info:
+                extensions = ", ".join(info.get("supported_extensions", []))
+                table.add_row(info["name"], info["description"], extensions)
+            
+            console.print(table)
+        else:
+            script_info = script_manager.get_script_info(script)
+            if script_info:
+                display_info(f"脚本信息: {script}", str(script_info))
+            else:
+                display_error(f"脚本不存在: {script}")
+        return
+    
+    # 准备参数
+    params = {
+        "pattern": pattern,
+        "dry_run": dry_run,
+        "backup": backup,
+        "recursive": recursive
+    }
+    
+    # 添加可选参数
+    if prefix:
+        params["prefix"] = prefix
+    if suffix:
+        params["suffix"] = suffix
+    if replace:
+        # 解析替换规则
+        try:
+            old, new = replace.split("=", 1)
+            params["replace"] = {old: new}
+        except ValueError:
+            display_error("替换规则格式错误，应为: old=new")
+            return
+    if format:
+        params["format"] = format
+    if exclude:
+        params["exclude"] = [x.strip() for x in exclude.split(",")]
+    
+    # 执行脚本
+    result = script_manager.execute_script(script, **params)
+    
+    if result["success"]:
+        display_success(result.get("message", "操作成功"))
+        
+        # 显示详细信息
+        if "renamed" in result and result["renamed"]:
+            table = Table(title="处理结果")
+            table.add_column("原文件名", style="red")
+            table.add_column("新文件名", style="green")
+            table.add_column("状态", style="cyan")
+            
+            for item in result["renamed"][:10]:  # 只显示前10个
+                status = "预览" if item.get("action") == "preview" else "已重命名"
+                table.add_row(item["old_name"], item["new_name"], status)
+            
+            console.print(table)
+            
+            if len(result["renamed"]) > 10:
+                display_info("提示", f"还有 {len(result['renamed']) - 10} 个文件未显示")
+        
+        # 显示统计信息
+        if "total_files" in result:
+            display_info("统计", f"总文件数: {result['total_files']}, 处理成功: {result.get('renamed_files', 0)}")
+            
+    else:
+        display_error(f"操作失败: {result.get('error', '未知错误')}")
+        
+        if "available_scripts" in result:
+            display_info("可用脚本", ", ".join(result["available_scripts"]))
+
+
+@app.command()
+def scripts():
+    """显示可用脚本"""
+    display_banner()
+    
+    from .scripts.manager import ScriptManager
+    
+    script_manager = ScriptManager(config_manager.load_config(), get_current_working_directory())
+    scripts_info = script_manager.list_scripts()
+    
+    if not scripts_info:
+        display_warning("没有找到可用的脚本")
+        return
+    
+    table = Table(title="可用脚本")
+    table.add_column("脚本名称", style="cyan")
+    table.add_column("描述", style="green")
+    table.add_column("支持扩展", style="yellow")
+    table.add_column("配置键", style="blue")
+    
+    for info in scripts_info:
+        extensions = ", ".join(info.get("supported_extensions", []))
+        config_keys = ", ".join(info.get("config_keys", []))
+        table.add_row(info["name"], info["description"], extensions, config_keys)
+    
+    console.print(table)
+    
+    display_info("使用示例", """
+    ssf process rename --prefix "new_" --pattern "*.txt"
+    ssf process rename --replace "old=new" --dry-run
+    ssf process rename --format "{date}_{index}_{name}" --pattern "*.jpg"
+    """)
 
 
 @app.command()

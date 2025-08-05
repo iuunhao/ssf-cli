@@ -26,6 +26,25 @@ class SSFConfig(BaseModel):
     # 文件操作配置
     output_dir: str = Field(default="./output", description="输出目录")
     temp_dir: str = Field(default="./temp", description="临时目录")
+    backup_dir: str = Field(default="./backup", description="备份目录")
+    
+    # 文件处理配置
+    file_processing: Dict[str, Any] = Field(default={
+        "default_backup": True,
+        "default_dry_run": False,
+        "default_recursive": True,
+        "exclude_patterns": [".git", "__pycache__", ".DS_Store"],
+        "supported_extensions": ["*"]
+    }, description="文件处理配置")
+    
+    # 重命名配置
+    rename_config: Dict[str, Any] = Field(default={
+        "default_prefix": "",
+        "default_suffix": "",
+        "auto_backup": True,
+        "conflict_resolution": "timestamp",
+        "date_format": "%Y%m%d_%H%M%S"
+    }, description="重命名配置")
     
     # 日志配置
     log_level: str = Field(default="INFO", description="日志级别")
