@@ -4,9 +4,13 @@
 """
 
 import typer
+import sys
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, TextColumn
+import json
+import shutil
 
 from .config import config_manager
 from .utils import (
@@ -20,6 +24,10 @@ from .utils import (
     get_installation_info,
     validate_python_version,
     check_dependencies,
+    log_info,
+    log_success,
+    log_warning,
+    log_error,
 )
 
 console = Console()
@@ -238,6 +246,55 @@ def status():
 
 
 @app.command()
+def debug():
+    """调试信息 - 显示详细的系统诊断信息"""
+    display_banner()
+    
+    # 获取详细的安装信息
+    install_info = get_installation_info()
+    
+    # 显示详细的调试信息
+    debug_info = []
+    debug_info.append(("Python版本", sys.version))
+    debug_info.append(("Python可执行文件", sys.executable))
+    debug_info.append(("当前工作目录", str(get_current_working_directory())))
+    debug_info.append(("模块路径", install_info.get("module_path", "未知")))
+    debug_info.append(("是否虚拟环境", "是" if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix) else "否"))
+    
+    # 检查sys.path
+    debug_info.append(("sys.path长度", str(len(sys.path))))
+    
+    # 检查模块导入
+    try:
+        import ssf_cli
+        debug_info.append(("ssf_cli模块", f"已导入: {ssf_cli.__file__}"))
+    except ImportError as e:
+        debug_info.append(("ssf_cli模块", f"导入失败: {e}"))
+    
+    # 检查配置
+    try:
+        config = config_manager.load_config()
+        debug_info.append(("配置加载", "成功"))
+    except Exception as e:
+        debug_info.append(("配置加载", f"失败: {e}"))
+    
+    # 显示调试表格
+    table = Table(title="调试信息")
+    table.add_column("项目", style="cyan")
+    table.add_column("值", style="green")
+    
+    for item, value in debug_info:
+        table.add_row(item, str(value))
+    
+    console.print(table)
+    
+    # 显示sys.path的前几个路径
+    console.print("\n[cyan]sys.path 前10个路径:[/cyan]")
+    for i, path in enumerate(sys.path[:10]):
+        console.print(f"  {i+1}. {path}")
+
+
+@app.command()
 def help():
     """显示帮助信息"""
     display_banner()
@@ -248,6 +305,7 @@ def help():
     ssf version          - 显示版本信息
     ssf pwd             - 显示当前工作目录
     ssf info            - 显示系统信息
+    ssf debug           - 显示详细调试信息
     ssf config show     - 显示配置信息
     ssf config init     - 初始化配置文件
     ssf config global   - 设置全局配置

@@ -11,7 +11,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.8,<3.13"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-ssf = "ssf_cli.main:app"
+ssf = "ssf_cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/ssf/ssf-cli"

@@ -146,17 +146,41 @@ def display_success(message: str) -> None:
 
 def is_installed_globally() -> bool:
     """检查是否全局安装"""
-    # 检查是否在虚拟环境中
-    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
-        return False
-    
-    # 检查安装路径
     try:
         import ssf_cli
         module_path = Path(ssf_cli.__file__).parent
-        # 如果模块路径在用户目录或系统目录下，认为是全局安装
-        return any(part in str(module_path) for part in ['site-packages', 'dist-packages'])
+        
+        # 检查是否在虚拟环境中
+        if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+            return False
+        
+        # 检查模块路径是否在系统Python目录中
+        module_path_str = str(module_path)
+        
+        # 检查是否在site-packages或dist-packages中
+        if any(part in module_path_str for part in ['site-packages', 'dist-packages']):
+            return True
+        
+        # 检查是否在用户安装目录中（pip install --user）
+        user_site = Path(sys.__path__[0]).parent / "site-packages"
+        if module_path == user_site:
+            return True
+        
+        # 检查是否在开发模式下安装（-e 参数）
+        if "src" in module_path_str and "ssf_cli" in module_path_str:
+            return False
+        
+        # 检查是否在项目目录中运行
+        current_dir = Path.cwd()
+        if module_path.is_relative_to(current_dir):
+            return False
+        
+        # 如果模块路径不在当前目录，且不在虚拟环境中，认为是全局安装
+        return True
+        
     except ImportError:
+        return False
+    except Exception:
         return False
 
 
