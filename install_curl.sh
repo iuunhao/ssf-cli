@@ -42,11 +42,12 @@ echo "🔧 创建临时目录: $temp_dir"
 # 清理函数
 cleanup() {
     echo "🧹 清理临时文件..."
-    rm -rf "$temp_dir"
+    # 不删除临时目录，因为包是从这里安装的
+    # rm -rf "$temp_dir"
 }
 
-# 设置退出时清理
-trap cleanup EXIT
+# 设置退出时清理（但保留临时目录）
+# trap cleanup EXIT
 
 # 克隆仓库
 repo_url="https://github.com/iuunhao/ssf-cli.git"
@@ -88,7 +89,8 @@ pip install typer rich pydantic --trusted-host pypi.org --trusted-host pypi.pyth
 
 # 安装SSF CLI
 echo "🔧 安装SSF CLI..."
-pip install -e "$temp_dir" --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+cd "$temp_dir"
+pip install -e . --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
 
 # 创建ssf脚本
 echo "🔧 创建ssf脚本..."

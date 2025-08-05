@@ -115,8 +115,8 @@ def clone_and_install(repo_url):
         subprocess.run([pip_cmd, "install", "--trusted-host", "pypi.org", "--trusted-host", "pypi.python.org", "--trusted-host", "files.pythonhosted.org", "typer", "rich", "pydantic"], check=True)
         
         # 安装SSF CLI
-        result = subprocess.run([pip_cmd, "install", "-e", str(temp_path)], 
-                              capture_output=True, text=True)
+        result = subprocess.run([pip_cmd, "install", "-e", "."], 
+                              cwd=str(temp_path), capture_output=True, text=True)
         
         if result.returncode == 0:
             print("✅ SSF CLI安装成功！")
