@@ -5,13 +5,85 @@
 
 import os
 import sys
+import logging
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.logging import RichHandler
 
 console = Console()
+
+
+def setup_logger(name: str = "ssf_cli", level: str = "INFO") -> logging.Logger:
+    """设置专业的日志记录器"""
+    logger = logging.getLogger(name)
+    logger.setLevel(getattr(logging, level.upper()))
+    
+    # 清除现有的处理器
+    logger.handlers.clear()
+    
+    # 创建Rich处理器，提供美观的日志输出
+    rich_handler = RichHandler(
+        console=console,
+        show_time=True,
+        show_path=False,
+        markup=True,
+        rich_tracebacks=True
+    )
+    
+    # 设置格式
+    formatter = logging.Formatter(
+        fmt="[NLPro] %(message)s",
+        datefmt="%H:%M:%S"
+    )
+    rich_handler.setFormatter(formatter)
+    
+    logger.addHandler(rich_handler)
+    
+    return logger
+
+
+def get_logger(name: str = "ssf_cli") -> logging.Logger:
+    """获取日志记录器"""
+    return logging.getLogger(name)
+
+
+def log_info(message: str, logger: Optional[logging.Logger] = None) -> None:
+    """记录信息日志"""
+    if logger is None:
+        logger = get_logger()
+    logger.info(f"ℹ️  {message}")
+
+
+def log_success(message: str, logger: Optional[logging.Logger] = None) -> None:
+    """记录成功日志"""
+    if logger is None:
+        logger = get_logger()
+    logger.info(f"✅ {message}")
+
+
+def log_warning(message: str, logger: Optional[logging.Logger] = None) -> None:
+    """记录警告日志"""
+    if logger is None:
+        logger = get_logger()
+    logger.warning(f"⚠️  {message}")
+
+
+def log_error(message: str, logger: Optional[logging.Logger] = None) -> None:
+    """记录错误日志"""
+    if logger is None:
+        logger = get_logger()
+    logger.error(f"❌ {message}")
+
+
+def log_debug(message: str, logger: Optional[logging.Logger] = None) -> None:
+    """记录调试日志"""
+    if logger is None:
+        logger = get_logger()
+    logger.debug(f"🔍 {message}")
 
 
 def get_current_working_directory() -> Path:
