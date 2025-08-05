@@ -35,25 +35,21 @@ fi
 
 echo "✅ Git可用: $(git --version)"
 
-# 创建临时目录
-temp_dir=$(mktemp -d)
-echo "🔧 创建临时目录: $temp_dir"
+# 创建项目目录
+project_dir="$HOME/ssf-cli"
+echo "🔧 创建项目目录: $project_dir"
 
-# 清理函数
-cleanup() {
-    echo "🧹 清理临时文件..."
-    # 不删除临时目录，因为包是从这里安装的
-    # rm -rf "$temp_dir"
-}
-
-# 设置退出时清理（但保留临时目录）
-# trap cleanup EXIT
+# 如果目录已存在，删除旧的
+if [ -d "$project_dir" ]; then
+    echo "🧹 清理旧的项目目录..."
+    rm -rf "$project_dir"
+fi
 
 # 克隆仓库
 repo_url="https://github.com/iuunhao/ssf-cli.git"
 echo "🔧 克隆仓库: $repo_url"
 
-if git clone --depth 1 "$repo_url" "$temp_dir"; then
+if git clone --depth 1 "$repo_url" "$project_dir"; then
     echo "✅ 仓库克隆成功"
 else
     echo "❌ 克隆失败"
@@ -61,7 +57,7 @@ else
 fi
 
 # 检查pyproject.toml
-if [ ! -f "$temp_dir/pyproject.toml" ]; then
+if [ ! -f "$project_dir/pyproject.toml" ]; then
     echo "❌ 未找到pyproject.toml文件"
     exit 1
 fi
@@ -89,7 +85,7 @@ pip install typer rich pydantic --trusted-host pypi.org --trusted-host pypi.pyth
 
 # 安装SSF CLI
 echo "🔧 安装SSF CLI..."
-cd "$temp_dir"
+cd "$project_dir"
 pip install -e . --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
 
 # 创建ssf脚本

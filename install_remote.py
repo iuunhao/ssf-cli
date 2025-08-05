@@ -77,22 +77,28 @@ def clone_and_install(repo_url):
     """克隆并安装"""
     print(f"🔧 克隆仓库: {repo_url}")
     
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        
-        # 克隆仓库
-        try:
-            subprocess.run(["git", "clone", "--depth", "1", repo_url, str(temp_path)], 
-                         check=True, capture_output=True)
-            print("✅ 仓库克隆成功")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ 克隆失败: {e}")
-            return False
-        
-        # 检查pyproject.toml
-        if not (temp_path / "pyproject.toml").exists():
-            print("❌ 未找到pyproject.toml文件")
-            return False
+    # 创建项目目录
+    project_dir = Path.home() / "ssf-cli"
+    print(f"🔧 创建项目目录: {project_dir}")
+    
+    # 如果目录已存在，删除旧的
+    if project_dir.exists():
+        print("🧹 清理旧的项目目录...")
+        shutil.rmtree(project_dir)
+    
+    # 克隆仓库
+    try:
+        subprocess.run(["git", "clone", "--depth", "1", repo_url, str(project_dir)], 
+                     check=True, capture_output=True)
+        print("✅ 仓库克隆成功")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ 克隆失败: {e}")
+        return False
+    
+    # 检查pyproject.toml
+    if not (project_dir / "pyproject.toml").exists():
+        print("❌ 未找到pyproject.toml文件")
+        return False
         
         # 查找兼容的Python版本
         python_cmd = find_compatible_python()
@@ -116,7 +122,7 @@ def clone_and_install(repo_url):
         
         # 安装SSF CLI
         result = subprocess.run([pip_cmd, "install", "-e", "."], 
-                              cwd=str(temp_path), capture_output=True, text=True)
+                              cwd=str(project_dir), capture_output=True, text=True)
         
         if result.returncode == 0:
             print("✅ SSF CLI安装成功！")

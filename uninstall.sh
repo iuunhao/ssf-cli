@@ -63,7 +63,15 @@ uninstall_ssf() {
         done
     done
     
-    # 4. 清理配置文件
+    # 4. 清理项目目录
+    project_dir="$HOME/ssf-cli"
+    if [ -d "$project_dir" ]; then
+        echo "🗑️  删除项目目录: $project_dir"
+        rm -rf "$project_dir"
+        echo -e "${GREEN}✅ 项目目录已删除${NC}"
+    fi
+    
+    # 5. 清理配置文件
     config_files=(
         "$HOME/.ssfrc"
         "$HOME/Desktop/code/ssfpro/ssf-cli/.ssfrc"
@@ -156,6 +164,13 @@ verify_uninstall() {
         echo -e "${RED}❌ ssf命令仍然可用: $(which ssf)${NC}"
     else
         echo -e "${GREEN}✅ ssf命令已删除${NC}"
+    fi
+    
+    # 检查项目目录
+    if [ -d "$HOME/ssf-cli" ]; then
+        echo -e "${RED}❌ 项目目录仍然存在${NC}"
+    else
+        echo -e "${GREEN}✅ 项目目录已删除${NC}"
     fi
     
     # 检查配置文件
