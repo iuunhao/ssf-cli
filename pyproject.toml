@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ssf-cli"
+version = "0.1.0"
+description = "SSF CLI工具 - 一个功能强大的命令行工具"
+authors = [
+    {name = "SSF Team", email = "team@ssf.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8,<3.13"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+]
+
+[project.scripts]
+ssf = "ssf_cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/ssf/ssf-cli"
+Repository = "https://github.com/ssf/ssf-cli"
+Issues = "https://github.com/ssf/ssf-cli/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ssf_cli"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"] 
