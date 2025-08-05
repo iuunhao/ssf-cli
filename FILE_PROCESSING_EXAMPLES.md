@@ -2,7 +2,7 @@
 
 ## 概述
 
-SSF CLI 提供了强大的文件处理功能，支持批量重命名、模式匹配、前缀后缀、格式化等功能。所有文件处理操作都支持备份功能，确保数据安全。
+SSF CLI 提供了强大的文件处理功能，支持批量重命名、模式匹配、前缀后缀、格式化等功能。所有文件处理操作都采用复制到新目录的方式，保留原文件，确保数据安全。
 
 ## 可用脚本
 
@@ -13,7 +13,7 @@ SSF CLI 提供了强大的文件处理功能，支持批量重命名、模式匹
 - 字符串替换
 - 格式化重命名
 - 批量处理
-- 自动备份
+- 复制到新目录（保留原文件）
 
 ## 使用示例
 
@@ -64,14 +64,14 @@ ssf process rename --prefix "new_" --pattern "*.txt" --dry-run
 ssf process rename --replace "old=new" --pattern "*.txt" --dry-run
 ```
 
-### 5. 备份控制
+### 5. 输出目录控制
 
 ```bash
-# 启用备份（默认）
-ssf process rename --prefix "new_" --pattern "*.txt" --backup
+# 指定输出目录
+ssf process rename --prefix "new_" --pattern "*.txt" --output-dir "./processed"
 
-# 禁用备份
-ssf process rename --prefix "new_" --pattern "*.txt" --no-backup
+# 使用默认输出目录
+ssf process rename --prefix "new_" --pattern "*.txt"
 ```
 
 ### 6. 递归控制
@@ -104,7 +104,7 @@ ssf process rename \
   --format "{date}_{index}_{name}" \
   --pattern "*.jpg" \
   --recursive \
-  --backup \
+  --output-dir "./photos" \
   --dry-run
 ```
 
@@ -120,19 +120,20 @@ ssf process rename \
 - `{index}` - 文件索引（从1开始）
 - `{stem}` - 当前文件名（不含扩展名）
 
-## 备份功能
+## 输出功能
 
-- 备份文件存储在 `./backup/` 目录
-- 备份文件名格式：`原文件名_backup_时间戳.扩展名`
-- 可以通过配置修改备份目录
-- 备份功能默认启用，可通过 `--no-backup` 禁用
+- 处理后的文件存储在指定的输出目录（默认：`./renamed_files/`）
+- 原文件保持不变，新文件复制到输出目录
+- 可以通过 `--output-dir` 参数指定输出目录
+- 支持大量文件处理，不会因为备份导致程序卡死
 
 ## 安全特性
 
 1. **预览模式**：使用 `--dry-run` 预览操作结果
-2. **自动备份**：所有重命名操作都会自动备份原文件
+2. **保留原文件**：所有操作都复制到新目录，原文件保持不变
 3. **冲突处理**：自动检测文件名冲突并添加时间戳
-4. **错误处理**：详细的错误信息和回滚机制
+4. **错误处理**：详细的错误信息和异常处理
+5. **大量文件支持**：优化的大文件处理，避免程序卡死
 
 ## 配置选项
 
@@ -142,11 +143,11 @@ ssf process rename \
 # 查看当前配置
 ssf config show
 
-# 设置默认备份目录
-ssf config local backup_dir "./my_backup"
+# 设置默认输出目录
+ssf config local output_dir "./my_processed_files"
 
 # 设置默认重命名配置
-ssf config local rename_config.auto_backup true
+ssf config local rename_config.preserve_original true
 ```
 
 ## 脚本管理
@@ -214,10 +215,11 @@ ssf process rename --format "large_{name}" --pattern "*.mp4" --recursive
 
 ### 常见问题
 
-1. **备份失败**：检查磁盘空间和权限
+1. **复制失败**：检查磁盘空间和权限
 2. **重命名失败**：检查文件是否被其他程序占用
 3. **权限错误**：确保对目标目录有写权限
 4. **文件名冲突**：系统会自动添加时间戳解决冲突
+5. **大量文件处理慢**：程序会逐个处理文件，避免内存溢出
 
 ### 调试技巧
 

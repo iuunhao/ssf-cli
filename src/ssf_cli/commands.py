@@ -355,6 +355,7 @@ def help():
     ssf system
     ssf process rename --prefix "new_" --pattern "*.txt"
     ssf process rename --replace "old=new" --dry-run
+    ssf process rename --prefix "IMG_" --output-dir "./photos" --pattern "*.jpg"
     ssf scripts
     """
     
@@ -473,7 +474,7 @@ def process(
     replace: str = typer.Option(None, "--replace", help="替换规则 (格式: old=new)"),
     format: str = typer.Option(None, "--format", help="格式化规则"),
     dry_run: bool = typer.Option(False, "--dry-run", help="仅预览，不执行"),
-    backup: bool = typer.Option(True, "--backup/--no-backup", help="是否备份"),
+    output_dir: str = typer.Option(None, "--output-dir", "-o", help="输出目录"),
     recursive: bool = typer.Option(True, "--recursive", help="是否递归"),
     exclude: str = typer.Option(None, "--exclude", help="排除模式 (逗号分隔)"),
 ):
@@ -513,9 +514,12 @@ def process(
     params = {
         "pattern": pattern,
         "dry_run": dry_run,
-        "backup": backup,
         "recursive": recursive
     }
+    
+    # 设置输出目录
+    if output_dir:
+        params["output_dir"] = output_dir
     
     # 添加可选参数
     if prefix:
@@ -599,6 +603,7 @@ def scripts():
     ssf process rename --prefix "new_" --pattern "*.txt"
     ssf process rename --replace "old=new" --dry-run
     ssf process rename --format "{date}_{index}_{name}" --pattern "*.jpg"
+    ssf process rename --prefix "IMG_" --output-dir "./photos" --pattern "*.jpg"
     """)
 
 

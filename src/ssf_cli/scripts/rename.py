@@ -93,7 +93,7 @@ class RenameScript(BaseScript):
         replace = kwargs.get('replace', {})
         format_str = kwargs.get('format', '')
         dry_run = kwargs.get('dry_run', False)
-        backup = kwargs.get('backup', True)
+        output_dir = kwargs.get('output_dir', None)
         recursive = kwargs.get('recursive', True)
         exclude = kwargs.get('exclude', [])
         
@@ -118,7 +118,7 @@ class RenameScript(BaseScript):
             try:
                 result = self._rename_file(
                     file_path, index, prefix, suffix, replace, format_str, 
-                    dry_run, backup
+                    dry_run, output_dir
                 )
                 if result['success']:
                     renamed_files.append(result)
@@ -168,7 +168,7 @@ class RenameScript(BaseScript):
     
     def _rename_file(self, file_path: Path, index: int, prefix: str, suffix: str, 
                     replace: Dict[str, str], format_str: str, dry_run: bool, 
-                    backup: bool) -> Dict[str, Any]:
+                    output_dir: Optional[str]) -> Dict[str, Any]:
         """重命名单个文件"""
         
         # 获取文件信息
@@ -221,25 +221,39 @@ class RenameScript(BaseScript):
             result["action"] = "preview"
             self.log_info(f"预览: {old_name} -> {new_name}")
         else:
-            # 备份文件
-            if backup:
-                try:
-                    backup_path = self.backup_file(file_path)
-                    result["backup_path"] = str(backup_path)
-                    self.log_info(f"已备份: {backup_path}")
-                except Exception as e:
-                    self.log_error(f"备份失败: {e}")
-                    result["backup_error"] = str(e)
-            
-            # 执行重命名
+            # 复制到新目录而不是重命名
             try:
-                file_path.rename(new_path)
-                result["action"] = "renamed"
-                self.log_info(f"重命名: {old_name} -> {new_name}")
+                # 创建输出目录
+                if output_dir:
+                    output_path = Path(output_dir)
+                else:
+                    output_path = Path(self.config.output_dir or "./renamed_files")
+                output_path.mkdir(parents=True, exist_ok=True)
+                
+                # 构建新文件路径
+                new_file_path = output_path / new_name
+                
+                # 检查文件名冲突
+                if new_file_path.exists():
+                    self.log_warning(f"文件名冲突: {new_name}")
+                    # 添加时间戳避免冲突
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    new_stem = f"{new_stem}_{timestamp}"
+                    new_name = new_stem + old_ext
+                    new_file_path = output_path / new_name
+                
+                # 复制文件到新目录
+                import shutil
+                shutil.copy2(file_path, new_file_path)
+                
+                result["action"] = "copied"
+                result["output_path"] = str(new_file_path)
+                self.log_info(f"复制: {old_name} -> {new_name}")
+                
             except Exception as e:
                 result["success"] = False
                 result["error"] = str(e)
-                self.log_error(f"重命名失败: {e}")
+                self.log_error(f"复制失败: {e}")
         
         return result
     
