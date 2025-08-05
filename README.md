@@ -43,6 +43,21 @@ curl -fsSL https://raw.githubusercontent.com/iuunhao/ssf-cli/main/install_remote
 python install_remote.py
 ```
 
+## 卸载
+
+如果需要卸载SSF CLI，可以使用以下方法：
+
+```bash
+# 使用卸载脚本（推荐）
+curl -fsSL https://raw.githubusercontent.com/iuunhao/ssf-cli/main/uninstall.sh | bash
+
+# 或者手动下载后运行
+./uninstall.sh
+
+# 强制卸载（跳过确认）
+./uninstall.sh --force
+```
+
 ### 开发环境安装
 
 ```bash
