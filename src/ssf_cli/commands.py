@@ -302,17 +302,40 @@ def help():
     help_text = """
     可用命令:
     
+    基础命令:
     ssf version          - 显示版本信息
     ssf pwd             - 显示当前工作目录
     ssf info            - 显示系统信息
     ssf debug           - 显示详细调试信息
+    ssf status          - 显示SSF CLI状态
+    ssf help            - 显示此帮助信息
+    
+    配置管理:
     ssf config show     - 显示配置信息
     ssf config init     - 初始化配置文件
     ssf config global   - 设置全局配置
     ssf config local    - 设置本地配置
+    
+    项目工具:
+    ssf create python   - 创建Python项目
+    ssf create web      - 创建Web项目
+    ssf create cli      - 创建CLI项目
+    ssf create api      - 创建API项目
+    
+    网络工具:
+    ssf fetch <url>     - 网络请求工具
+    
+    文件工具:
+    ssf files list      - 列出文件
+    ssf files find      - 查找文件
+    ssf files count     - 统计文件
+    ssf files size      - 目录大小
+    
+    系统工具:
+    ssf system          - 系统信息工具
+    
+    安装管理:
     ssf install         - 一键安装SSF CLI
-    ssf status          - 显示SSF CLI状态
-    ssf help            - 显示此帮助信息
     
     配置管理:
     - 内置配置: CLI工具内置的默认配置
@@ -320,9 +343,453 @@ def help():
     - 本地配置: ./.ssfrc (当前目录)
     
     配置优先级: 本地配置 > 全局配置 > 内置配置
+    
+    使用示例:
+    ssf create python --name my-project
+    ssf fetch https://httpbin.org/json
+    ssf files list --path /tmp
+    ssf system
     """
     
     display_info("SSF CLI 帮助", help_text)
+
+
+@app.command()
+def create(
+    template: str = typer.Argument(..., help="项目模板类型: python, web, cli, api"),
+    name: str = typer.Option(None, "--name", "-n", help="项目名称"),
+    path: str = typer.Option(".", "--path", "-p", help="项目路径"),
+):
+    """创建新项目"""
+    display_banner()
+    
+    if not name:
+        name = typer.prompt("请输入项目名称")
+    
+    project_path = Path(path) / name
+    
+    if project_path.exists():
+        display_error(f"项目目录已存在: {project_path}")
+        return
+    
+    # 创建项目目录
+    project_path.mkdir(parents=True, exist_ok=True)
+    
+    # 根据模板创建项目
+    if template == "python":
+        create_python_project(project_path, name)
+    elif template == "web":
+        create_web_project(project_path, name)
+    elif template == "cli":
+        create_cli_project(project_path, name)
+    elif template == "api":
+        create_api_project(project_path, name)
+    else:
+        display_error(f"未知的模板类型: {template}")
+        return
+    
+    display_success(f"项目创建成功: {project_path}")
+
+
+@app.command()
+def fetch(
+    url: str = typer.Argument(..., help="要获取的URL"),
+    output: str = typer.Option(None, "--output", "-o", help="输出文件路径"),
+    method: str = typer.Option("GET", "--method", "-m", help="HTTP方法"),
+):
+    """网络请求工具"""
+    display_banner()
+    
+    try:
+        import requests
+        
+        log_info(f"正在请求: {method} {url}")
+        
+        response = requests.request(method, url, timeout=30)
+        
+        if response.status_code == 200:
+            display_success(f"请求成功 (状态码: {response.status_code})")
+            
+            if output:
+                with open(output, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                display_success(f"内容已保存到: {output}")
+            else:
+                # 显示前500个字符
+                content = response.text[:500]
+                if len(response.text) > 500:
+                    content += "\n... (内容已截断)"
+                display_info("响应内容", content)
+        else:
+            display_error(f"请求失败 (状态码: {response.status_code})")
+            
+    except ImportError:
+        display_error("缺少requests模块，请运行: pip install requests")
+    except Exception as e:
+        display_error(f"请求失败: {e}")
+
+
+@app.command()
+def files(
+    action: str = typer.Argument(..., help="操作类型: list, find, count, size"),
+    path: str = typer.Option(".", "--path", "-p", help="目录路径"),
+    pattern: str = typer.Option("*", "--pattern", help="文件模式"),
+):
+    """文件操作工具"""
+    display_banner()
+    
+    target_path = Path(path)
+    
+    if not target_path.exists():
+        display_error(f"路径不存在: {target_path}")
+        return
+    
+    if action == "list":
+        list_files(target_path, pattern)
+    elif action == "find":
+        find_files(target_path, pattern)
+    elif action == "count":
+        count_files(target_path, pattern)
+    elif action == "size":
+        get_directory_size(target_path)
+    else:
+        display_error(f"未知的操作类型: {action}")
+
+
+@app.command()
+def system():
+    """系统信息工具"""
+    display_banner()
+    
+    import platform
+    import psutil
+    
+    try:
+        # 系统信息
+        system_info = []
+        system_info.append(("操作系统", platform.system()))
+        system_info.append(("系统版本", platform.version()))
+        system_info.append(("架构", platform.machine()))
+        system_info.append(("处理器", platform.processor()))
+        
+        # 内存信息
+        memory = psutil.virtual_memory()
+        system_info.append(("总内存", f"{memory.total / (1024**3):.2f} GB"))
+        system_info.append(("可用内存", f"{memory.available / (1024**3):.2f} GB"))
+        system_info.append(("内存使用率", f"{memory.percent:.1f}%"))
+        
+        # CPU信息
+        cpu_percent = psutil.cpu_percent(interval=1)
+        system_info.append(("CPU使用率", f"{cpu_percent:.1f}%"))
+        system_info.append(("CPU核心数", str(psutil.cpu_count())))
+        
+        # 磁盘信息
+        disk = psutil.disk_usage('/')
+        system_info.append(("磁盘总空间", f"{disk.total / (1024**3):.2f} GB"))
+        system_info.append(("磁盘可用空间", f"{disk.free / (1024**3):.2f} GB"))
+        system_info.append(("磁盘使用率", f"{disk.percent:.1f}%"))
+        
+        # 显示表格
+        table = Table(title="系统信息")
+        table.add_column("项目", style="cyan")
+        table.add_column("值", style="green")
+        
+        for item, value in system_info:
+            table.add_row(item, str(value))
+        
+        console.print(table)
+        
+    except ImportError:
+        display_error("缺少psutil模块，请运行: pip install psutil")
+    except Exception as e:
+        display_error(f"获取系统信息失败: {e}")
+
+
+# 辅助函数
+def create_python_project(path: Path, name: str):
+    """创建Python项目"""
+    # 创建基本目录结构
+    (path / "src" / name).mkdir(parents=True, exist_ok=True)
+    (path / "tests").mkdir(exist_ok=True)
+    (path / "docs").mkdir(exist_ok=True)
+    
+    # 创建pyproject.toml
+    pyproject_content = f'''[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "{name}"
+version = "0.1.0"
+description = "A Python project"
+authors = [{{name = "Your Name", email = "your.email@example.com"}}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "isort", "flake8"]
+'''
+    
+    with open(path / "pyproject.toml", "w") as f:
+        f.write(pyproject_content)
+    
+    # 创建README
+    readme_content = f'''# {name}
+
+A Python project created with SSF CLI.
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+```python
+from {name} import main
+
+main()
+```
+'''
+    
+    with open(path / "README.md", "w") as f:
+        f.write(readme_content)
+    
+    # 创建__init__.py
+    with open(path / "src" / name / "__init__.py", "w") as f:
+        f.write(f'"""\n{name} package\n"""\n\n__version__ = "0.1.0"\n')
+
+
+def create_web_project(path: Path, name: str):
+    """创建Web项目"""
+    # 创建基本目录结构
+    (path / "static").mkdir(exist_ok=True)
+    (path / "templates").mkdir(exist_ok=True)
+    (path / "static" / "css").mkdir(exist_ok=True)
+    (path / "static" / "js").mkdir(exist_ok=True)
+    
+    # 创建app.py
+    app_content = f'''from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
+'''
+    
+    with open(path / "app.py", "w") as f:
+        f.write(app_content)
+    
+    # 创建requirements.txt
+    requirements_content = '''flask>=2.0.0
+jinja2>=3.0.0
+'''
+    
+    with open(path / "requirements.txt", "w") as f:
+        f.write(requirements_content)
+    
+    # 创建HTML模板
+    html_content = f'''<!DOCTYPE html>
+<html>
+<head>
+    <title>{name}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Welcome to {name}</h1>
+    <p>This is a web project created with SSF CLI.</p>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+'''
+    
+    with open(path / "templates" / "index.html", "w") as f:
+        f.write(html_content)
+
+
+def create_cli_project(path: Path, name: str):
+    """创建CLI项目"""
+    # 创建基本目录结构
+    (path / "src" / name).mkdir(parents=True, exist_ok=True)
+    
+    # 创建pyproject.toml
+    pyproject_content = f'''[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "{name}"
+version = "0.1.0"
+description = "A CLI tool"
+authors = [{{name = "Your Name", email = "your.email@example.com"}}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["typer", "rich"]
+
+[project.scripts]
+{name} = "{name}.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/{name}"]
+'''
+    
+    with open(path / "pyproject.toml", "w") as f:
+        f.write(pyproject_content)
+    
+    # 创建main.py
+    main_content = f'''import typer
+from rich.console import Console
+
+app = typer.Typer()
+console = Console()
+
+@app.command()
+def hello():
+    """Say hello"""
+    console.print("Hello from {name}!")
+
+if __name__ == "__main__":
+    app()
+'''
+    
+    with open(path / "src" / name / "main.py", "w") as f:
+        f.write(main_content)
+    
+    # 创建__init__.py
+    with open(path / "src" / name / "__init__.py", "w") as f:
+        f.write(f'"""\n{name} CLI tool\n"""\n\n__version__ = "0.1.0"\n')
+
+
+def create_api_project(path: Path, name: str):
+    """创建API项目"""
+    # 创建基本目录结构
+    (path / "app").mkdir(exist_ok=True)
+    (path / "app" / "routes").mkdir(exist_ok=True)
+    (path / "app" / "models").mkdir(exist_ok=True)
+    (path / "app" / "services").mkdir(exist_ok=True)
+    
+    # 创建main.py
+    main_content = f'''from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="{name} API", version="0.1.0")
+
+# CORS设置
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+async def root():
+    return {{"message": "Welcome to {name} API"}}
+
+@app.get("/health")
+async def health():
+    return {{"status": "healthy"}}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+'''
+    
+    with open(path / "main.py", "w") as f:
+        f.write(main_content)
+    
+    # 创建requirements.txt
+    requirements_content = '''fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+'''
+    
+    with open(path / "requirements.txt", "w") as f:
+        f.write(requirements_content)
+
+
+def list_files(path: Path, pattern: str):
+    """列出文件"""
+    files = list(path.glob(pattern))
+    
+    if not files:
+        display_info("文件列表", f"在 {path} 中未找到匹配 {pattern} 的文件")
+        return
+    
+    table = Table(title=f"文件列表 - {path}")
+    table.add_column("文件名", style="cyan")
+    table.add_column("类型", style="green")
+    table.add_column("大小", style="yellow")
+    
+    for file in files[:50]:  # 限制显示50个文件
+        file_type = "目录" if file.is_dir() else "文件"
+        size = f"{file.stat().st_size:,} bytes" if file.is_file() else "-"
+        table.add_row(file.name, file_type, size)
+    
+    console.print(table)
+    
+    if len(files) > 50:
+        display_info("提示", f"显示了前50个文件，共找到 {len(files)} 个文件")
+
+
+def find_files(path: Path, pattern: str):
+    """查找文件"""
+    files = list(path.rglob(pattern))
+    
+    if not files:
+        display_info("查找结果", f"在 {path} 中未找到匹配 {pattern} 的文件")
+        return
+    
+    table = Table(title=f"查找结果 - {pattern}")
+    table.add_column("文件路径", style="cyan")
+    table.add_column("大小", style="green")
+    
+    for file in files[:50]:  # 限制显示50个文件
+        size = f"{file.stat().st_size:,} bytes" if file.is_file() else "-"
+        table.add_row(str(file.relative_to(path)), size)
+    
+    console.print(table)
+    
+    if len(files) > 50:
+        display_info("提示", f"显示了前50个文件，共找到 {len(files)} 个文件")
+
+
+def count_files(path: Path, pattern: str):
+    """统计文件数量"""
+    files = list(path.rglob(pattern))
+    
+    file_count = len([f for f in files if f.is_file()])
+    dir_count = len([f for f in files if f.is_dir()])
+    
+    display_info("文件统计", f"在 {path} 中找到:\n- 文件: {file_count} 个\n- 目录: {dir_count} 个\n- 总计: {len(files)} 个")
+
+
+def get_directory_size(path: Path):
+    """获取目录大小"""
+    total_size = 0
+    file_count = 0
+    
+    for file in path.rglob("*"):
+        if file.is_file():
+            total_size += file.stat().st_size
+            file_count += 1
+    
+    size_gb = total_size / (1024**3)
+    size_mb = total_size / (1024**2)
+    
+    if size_gb >= 1:
+        size_str = f"{size_gb:.2f} GB"
+    else:
+        size_str = f"{size_mb:.2f} MB"
+    
+    display_info("目录大小", f"{path}:\n- 总大小: {size_str}\n- 文件数: {file_count} 个")
 
 
 # 设置默认命令
