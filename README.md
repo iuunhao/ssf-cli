@@ -8,12 +8,33 @@
 - 🌍 全局安装，支持在任何目录执行
 - 📁 自动收集当前执行目录路径
 - 🚀 基于Typer构建，提供优秀的CLI体验
+- 🧹 提供完整的卸载功能
 
 ## 系统要求
 
 - **Python版本**: 3.8 - 3.12 (不支持Python 3.13及以上版本)
 - **操作系统**: Windows, macOS, Linux
 - **依赖**: Git (用于远程安装)
+
+## 项目结构
+
+```
+ssf-cli/
+├── pyproject.toml          # 项目配置和依赖管理
+├── README.md              # 项目文档
+├── install.py             # 本地安装脚本
+├── install_curl.sh        # curl一键安装脚本
+├── install_remote.py      # Python远程安装脚本
+├── uninstall.sh           # 卸载脚本
+├── .gitignore            # Git忽略文件
+└── src/
+    └── ssf_cli/
+        ├── __init__.py    # 包初始化
+        ├── main.py        # 主入口文件
+        ├── commands.py    # 命令实现
+        ├── config.py      # 配置管理
+        └── utils.py       # 工具函数
+```
 
 ## 安装
 
